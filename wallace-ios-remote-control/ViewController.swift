@@ -111,8 +111,8 @@ class ViewController: UIViewController {
     
     func initSlider(slider: UISlider) {
         slider.transform = CGAffineTransform(rotationAngle: -CGFloat.pi/2)
-        slider.minimumValue = -100
-        slider.maximumValue = 100
+        slider.minimumValue = -255
+        slider.maximumValue = 255
         slider.setValue(0, animated: false)
     }
     
