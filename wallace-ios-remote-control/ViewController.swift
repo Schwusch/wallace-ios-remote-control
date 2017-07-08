@@ -9,7 +9,7 @@
 import UIKit
 import Starscream
 
-class ViewController: UIViewController {
+class ViewController: UIViewController, WebSocketDelegate {
     
     @IBOutlet weak var connectingIndicator: UIActivityIndicatorView!
     @IBOutlet weak var ConnectToIPButton: UIButton!
@@ -18,19 +18,25 @@ class ViewController: UIViewController {
     @IBOutlet weak var rightMotorSpeedSlider: UISlider!{
         didSet{
             initSlider(slider: rightMotorSpeedSlider)
+            rightMotorSpeedSlider.isEnabled = false
         }
     }
     
     @IBOutlet weak var leftMotorSpeedSlider: UISlider!{
         didSet{
             initSlider(slider: leftMotorSpeedSlider)
+            leftMotorSpeedSlider.isEnabled = false
         }
     }
     
     @IBOutlet weak var leftSpeedSliderValue: UILabel!
     @IBOutlet weak var rightSpeedSliderValue: UILabel!
     
-    @IBOutlet weak var stopMotorsButton: UIButton!
+    @IBOutlet weak var stopMotorsButton: UIButton!{
+        didSet{
+            stopMotorsButton.isEnabled = false
+        }
+    }
     
     var socket: WebSocket?
     var oldSliderValues = (0, 0)
@@ -75,33 +81,53 @@ class ViewController: UIViewController {
             ConnectToIPButton.isHidden = true
             
             socket = WebSocket(url: URL(string: "ws://\(iPadressField.text!):8887/")!)
-            
-            socket?.onConnect = {
-                self.connectingIndicator.stopAnimating()
-                self.ConnectToIPButton.isHidden = false
-                self.ConnectToIPButton.isEnabled = false
-                print("websocket is connected")
-            }
-            
-            socket?.onDisconnect = { (error: NSError?) in
-                self.connectingIndicator.stopAnimating()
-                self.ConnectToIPButton.isHidden = false
-                self.ConnectToIPButton.isEnabled = true
-                print("websocket is disconnected: \(error?.localizedDescription ?? "no error")")
-            }
-            
-            socket?.onText = { (text: String) in
-                print("got some text: \(text)")
-            }
-            
-            socket?.onData = { (data: Data) in
-                print("got some data: \(data.count)")
-            }
-            
+            socket?.delegate = self
             socket?.connect()
         } else {
             print("Not a valid IP Address!")
         }
+    }
+    
+    func websocketDidReceiveMessage(socket: WebSocket, text: String) {
+        print("got some text: \(text)")
+    }
+    
+    func websocketDidReceiveData(socket: WebSocket, data: Data) {
+        print("got some data: \(data.count)")
+    }
+    
+    func websocketDidDisconnect(socket: WebSocket, error: NSError?) {
+        self.connectingIndicator.stopAnimating()
+        
+        self.ConnectToIPButton.isHidden = false
+        self.ConnectToIPButton.isEnabled = true
+        
+        rightMotorSpeedSlider.value = 0
+        rightMotorSpeedSlider.isEnabled = false
+        
+        leftMotorSpeedSlider.value = 0
+        leftMotorSpeedSlider.isEnabled = false
+        
+        stopMotorsButton.isEnabled = false
+        
+        print("websocket is disconnected: \(error?.localizedDescription ?? "no error")")
+    }
+    
+    func websocketDidConnect(socket: WebSocket) {
+        connectingIndicator.stopAnimating()
+        
+        ConnectToIPButton.isHidden = false
+        ConnectToIPButton.isEnabled = false
+        
+        rightMotorSpeedSlider.value = 0
+        rightMotorSpeedSlider.isEnabled = true
+        
+        leftMotorSpeedSlider.value = 0
+        leftMotorSpeedSlider.isEnabled = true
+        
+        stopMotorsButton.isEnabled = true
+        
+        print("websocket is connected")
     }
     
     func sendMotorSpeedsToRobot(rightMotor: Int, leftMotor: Int) {
