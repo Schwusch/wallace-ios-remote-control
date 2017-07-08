@@ -33,6 +33,7 @@ class ViewController: UIViewController {
     @IBOutlet weak var stopMotorsButton: UIButton!
     
     var socket: WebSocket?
+    var oldSliderValues = (0, 0)
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -44,15 +45,17 @@ class ViewController: UIViewController {
         // Dispose of any resources that can be recreated.
     }
     
-    @IBAction func rightSliderValueChanged(_ sender: UISlider) {
-        rightSpeedSliderValue.text = String(Int(sender.value))
-        sendMotorSpeedsToRobot(rightMotor: Int(sender.value), leftMotor: Int(leftMotorSpeedSlider.value))
+    @IBAction func sliderValueChanged(_ _: UISlider) {
+        let newSliderValues = getSliderValues()
+        if newSliderValues != oldSliderValues {
+            oldSliderValues = newSliderValues
+            let (right, left) = newSliderValues
+            rightSpeedSliderValue.text = String(right)
+            leftSpeedSliderValue.text = String(left)
+            sendMotorSpeedsToRobot(rightMotor: right, leftMotor: left)
+        }
     }
     
-    @IBAction func leftSliderValueChanged(_ sender: UISlider) {
-        leftSpeedSliderValue.text = String(Int(sender.value))
-        sendMotorSpeedsToRobot(rightMotor: Int(rightMotorSpeedSlider.value), leftMotor: Int(sender.value))
-    }
     
     @IBAction func stopMotorsButtonPressed() {
         leftMotorSpeedSlider.value = 0
@@ -124,6 +127,10 @@ class ViewController: UIViewController {
         }
         
         return false
+    }
+    
+    func getSliderValues() -> (Int, Int) {
+        return (Int(rightMotorSpeedSlider.value), Int(leftMotorSpeedSlider.value))
     }
 }
 
